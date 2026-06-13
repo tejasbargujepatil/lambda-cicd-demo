@@ -23,7 +23,7 @@ def lambda_handler(event, context):
             'a': a,
             'b': b,
             'result': result,
-            'version': 'v4.0'           # change this to prove CI/CD works
+            'version': 'v5.0'           # change this to prove CI/CD works
         })
     }
 
