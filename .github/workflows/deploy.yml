@@ -1,0 +1,61 @@
+name: Deploy to AWS Lambda
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Zip and deploy Lambda
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies into package folder
+        run: |
+          pip install -r requirements.txt -t package/
+          cp lambda_function.py package/
+
+      - name: Zip the deployment package
+        run: |
+          cd package
+          zip -r ../lambda_deployment.zip .
+          cd ..
+          echo "Zip created:"
+          ls -lh lambda_deployment.zip
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            ap-south-1
+
+      - name: Deploy to Lambda
+        run: |
+          aws lambda update-function-code \
+            --function-name lambda-cicd-demo \
+            --zip-file fileb://lambda_deployment.zip \
+            --region ap-south-1
+
+      - name: Wait for update to complete
+        run: |
+          aws lambda wait function-updated \
+            --function-name lambda-cicd-demo \
+            --region ap-south-1
+
+      - name: Verify deployment
+        run: |
+          aws lambda get-function-configuration \
+            --function-name lambda-cicd-demo \
+            --region ap-south-1 \
+            --query '{Name:FunctionName,Runtime:Runtime,LastModified:LastModified}' \
+            --output table

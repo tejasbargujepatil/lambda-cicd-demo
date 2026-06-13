@@ -1,0 +1,2 @@
+# no external dependencies for this Lambda
+# add packages here if needed e.g. boto3, requests
